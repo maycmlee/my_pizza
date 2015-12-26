@@ -15,24 +15,26 @@ class VenueLocationData
   end
 
   def food_beverage_times_square
-    self.url = "https://data.cityofnewyork.us/api/views/kh2m-kcyz/rows.json?accessType=DOWNLOAD"
-    get_name_phone_address
+    url = "https://data.cityofnewyork.us/api/views/kh2m-kcyz/rows.json?accessType=DOWNLOAD"
+    json_result = get_json(url)
+    venue_info = get_venues(json_result)
+    get_name_phone_address(venue_info)
   end
 
-  def get_json
-    data = open(self.url).read
+  def get_json(url)
+    data = open(url).read
     JSON.parse(data)
   end
 
-  def get_venues
-    venues = get_json["data"]
+  def get_venues(json_result)
+    venues = json_result["data"]
     venues.select do |venue|
-     venue.include?(venue_type)
+     venue.include?(venue_type.capitalize)
     end
   end
 
-  def get_name_phone_address
-    get_venues.map do |venue|
+  def get_name_phone_address(venues)
+    venues.map do |venue|
       address = clean_address(venue[7][40..55])
       [venue[8], venue[11], address]
     end
@@ -56,7 +58,7 @@ class OutputCSV
 end
 
 
-info = VenueLocationData.new("Pizza").food_beverage_times_square
+info = VenueLocationData.new("pizza").food_beverage_times_square
 newCSV = OutputCSV.new(info)
 newCSV.convert_hashdata_to_CSV
 
