@@ -29,10 +29,7 @@ class FlickrConnection
 
   def get_urls
     self.photos.map do |photo|
-      # puts photo.title
-      # binding.pry
       photo.url(:small)
-      # puts "#{size}: #{photo.url(size)}"
     end
   end
 

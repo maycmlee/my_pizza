@@ -6,7 +6,6 @@ require 'pp'
 require 'csv'
 require 'google/api_client'
 require 'flickr_fu'
-require 'mini_magick'
 
 # 1. Find an open source data set with information about the food and beverage venues in the Times Square area. Write a script that retrieves that data and outputs a CSV file containing the name, phone number, and address of the pizza restaurants in the data set.
 
@@ -63,13 +62,10 @@ class OutputCSV
 end
 
 
-# data = PizzaLocationData.new
-# info = data.food_beverage_times_square
-# pp info
-# newCSV = OutputCSV.new(info)
-# x = newCSV.convert_hashdata_to_CSV
-
-
+data = PizzaLocationData.new
+info = data.food_beverage_times_square
+newCSV = OutputCSV.new(info)
+newCSV.convert_hashdata_to_CSV
 
 
 # Create a single-file program in Javascript, Ruby, or Objective-C that performs the exercise. Javascript and Ruby codeshould not be platform-specific. Objective-C code samples will be compiled and run on Mac OS X.
