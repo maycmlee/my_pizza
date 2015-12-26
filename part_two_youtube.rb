@@ -11,11 +11,9 @@ require 'google/api_client'
 # which embeds these videos and presents them as a grid.
 
 class YouTubeConnection
-
   attr_accessor :video_search_JSON
-  
-  # YOUTUBE_API_SERVICE_NAME = 'youtube'
-  # YOUTUBE_API_VERSION = 'v3'
+
+  DEVELOPER_KEY = File.read("youtube.yml")
 
   def initialize
     @client = Google::APIClient.new(
@@ -23,48 +21,53 @@ class YouTubeConnection
     :authorization => nil,
     :application_name => $PROGRAM_NAME,
     :application_version => '1.0.0'
-  )
-  # @youtube = client.discovered_api(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION)
+    )
   end
 
-  def query
-    youtube = @client.discovered_api('youtube', 'v3')
-
-    @client.authorization = nil
-
-    video_search = @client.execute :api_method => youtube.search.list, :parameters => {q: 'pizza', part: 'id', type: 'video', chart: "mostPopular"}
-
-    self.video_search_JSON = JSON.parse(video_search.data.to_json)
+  def get_pizza_video_urls
+    get_video_ids.map do |video_id|
+      "https://www.youtube.com/embed/#{video_id}"
+    end
   end
 
   def get_video_ids
-    self.video_search_JSON.values[4].map do |video|
+    pizza_query.values[4].map do |video|
       video["id"]["videoId"]
     end
   end
 
-  def video_html
-# https://www.youtube.com/watch?v=123123asdsad12
-    x = get_video_ids.map do |video_id|
-      "https://www.youtube.com/watch?v=#{video_id}"
-    end
-    pp x
+  def pizza_query
+    youtube = @client.discovered_api('youtube', 'v3')
+
+    video_search = @client.execute :api_method => youtube.search.list, :parameters => {q: 'pizza', part: 'id', type: 'video', chart: "mostPopular"}
+
+    JSON.parse(video_search.data.to_json)
   end
-
-
 end
 
 class EmbedVideotoHTMLPage
+  attr_accessor :urls_array
 
-# <video width="320" height="240" controls>
-#   <source src="movie.mp4" type="video/mp4">
-#   <source src="movie.ogg" type="video/ogg">
-# Your browser does not support the video tag.
-# </video>
+  def initialize(urls_array)
+    @urls_array = urls_array
+  end
+
+  def create_html_page
+    File.open("pizza_videos.html","wb") do |file|
+      file.write("<!DOCTYPE html><html><body>")
+      embed_video_strings.each do |video_string|
+        file.write(video_string)
+      end
+      file.write("</body></html>")
+    end
+  end
+
+  def embed_video_strings
+    self.urls_array.map do |url|
+      "<iframe title='YouTube video player' width='480' height='390' src=" + url + " type='video/mp4'></iframe>"
+    end
+  end
 end
 
-
-conn = YouTubeConnection.new
-conn.query
-conn.get_video_ids
-conn.video_html
+x = YouTubeConnection.new.get_pizza_video_urls
+y = EmbedVideotoHTMLPage.new(x).create_html_page
