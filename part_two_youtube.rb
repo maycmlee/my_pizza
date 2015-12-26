@@ -24,25 +24,32 @@ class YouTubeConnection
     )
   end
 
-  def get_pizza_video_urls
-    get_video_ids.map do |video_id|
-      "https://www.youtube.com/embed/#{video_id}"
-    end
+  def get_videos(search_term)
+    query_result = query(search_term)
+    video_ids = get_video_ids(query_result)
+    get_pizza_video_urls(video_ids)
   end
 
-  def get_video_ids
-    pizza_query.values[4].map do |video|
+  def query(search_term)
+    youtube = @client.discovered_api('youtube', 'v3')
+
+    video_search = @client.execute :api_method => youtube.search.list, :parameters => {q: "#{search_term}", part: 'id', type: 'video', chart: "mostPopular"}
+
+    JSON.parse(video_search.data.to_json)
+  end
+
+  def get_video_ids(query_result)
+    query_result.values[4].map do |video|
       video["id"]["videoId"]
     end
   end
 
-  def pizza_query
-    youtube = @client.discovered_api('youtube', 'v3')
-
-    video_search = @client.execute :api_method => youtube.search.list, :parameters => {q: 'pizza', part: 'id', type: 'video', chart: "mostPopular"}
-
-    JSON.parse(video_search.data.to_json)
+  def get_pizza_video_urls(video_ids)
+    video_ids.map do |video_id|
+      "https://www.youtube.com/embed/#{video_id}"
+    end
   end
+  
 end
 
 class EmbedVideotoHTMLPage
@@ -69,5 +76,5 @@ class EmbedVideotoHTMLPage
   end
 end
 
-x = YouTubeConnection.new.get_pizza_video_urls
+x = YouTubeConnection.new.get_videos("Pizza")
 y = EmbedVideotoHTMLPage.new(x).create_html_page
