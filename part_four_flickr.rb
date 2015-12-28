@@ -26,7 +26,7 @@ class FlickrConnection
 
   def get_pizza_photos
     #need to change per_page to 20 for final submission
-    @flickr.photos.search(text: 'pizza',tags: 'pizza', content_type: 1, per_page: 20)
+    @flickr.photos.search(text: 'pizza',tags: 'pizza', content_type: 1, per_page: 20, license: 6)
   end
 
   def get_urls
