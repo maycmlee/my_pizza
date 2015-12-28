@@ -3,6 +3,7 @@ require 'open-uri'
 require 'json'
 require 'pry' 
 require 'pp'
+# require 'fileutils'
 
 # 3. Find an API for a source of news, in audio format. 
 # Output a file that can be loaded into VLC Media Player 
@@ -20,7 +21,8 @@ class NPRQuery
   def self.get_pizza_audios
     pizza = NPRQuery.new("pizza")
     results = pizza.query
-    pizza.get_audio_urls(results)
+    urls = pizza.get_audio_urls(results)
+    pizza.download_audio(urls)
   end
 
   def query
@@ -36,6 +38,18 @@ class NPRQuery
       data["audio"][0]["format"]["mp3"].first["$text"]
     end
   end
+
+  def download_audio(urls)
+    mp3s_list = []
+    Dir.mkdir("audio")
+    urls.each_with_index do |url, index|
+      open("audio/audio_#{index}.mp3", 'wb') do |file|
+        file << open(url).read
+        mp3s_list << "audio_#{index}.mp3"
+      end
+    end
+  end
+
 end
 
 NPRQuery.get_pizza_audios
