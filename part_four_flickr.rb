@@ -12,6 +12,14 @@ include Magick
 # images of pizza and outputs an image file that is a collage of 
 # these images.
 
+class FlickrSearchandOutput
+
+  def self.run
+    photos = FlickrConnection.new.get_photo_urls
+    CreateCollage.new(photos).new_collage
+  end
+end
+
 class FlickrConnection
   attr_accessor :photos, :urls
 
@@ -37,38 +45,45 @@ class FlickrConnection
 
 end
 
-class OutputCompositeImageFile
+class CreateCollage
+    attr_accessor :photo_urls, :sliced_arrays, :photos_array
 
   def initialize(photo_urls)
     @photo_urls = photo_urls
   end
 
+  def new_collage
+    self.download_imgs
+    self.collage_of_imgs
+  end
+
   def download_imgs
-    photos_array = []
+    @photos_array = []
     Dir.mkdir("images") unless File.exist?("images")
     @photo_urls.each_with_index do |url, index|
       open(url) {|f|
         File.open("images/pizza_#{index}.jpg","wb") do |file|
             file.puts f.read
-            photos_array << "images/pizza_#{index}.jpg"
+            self.photos_array << "images/pizza_#{index}.jpg"
           end
         }
     end
     photos_array
   end
 
-  def slice_(photos_array, num)
-    photos_array.each_slice(num).to_a
-  end
-
-  def collage_of_imgs(sliced_arrays)
+  def collage_of_imgs
     collage = ImageList.new
 
-    sliced_arrays.each do |array|
+    sliced_photo_array.each do |array|
       row = create_row_of_images(array)
       collage.push (row.append(false))
     end
     collage.append(true).write("pizza_collage.jpg")
+  end
+
+  def sliced_photo_array
+    #slices array of photos into subarrays of 4 photos
+    self.photos_array.each_slice(4).to_a
   end
 
   def create_row_of_images(photos_array)
@@ -85,13 +100,6 @@ class OutputCompositeImageFile
     resize = image.resize_to_fill(200, 100)
     resize.write("images/pizza_#{index}.jpg")
   end
-
 end
 
-
-x = FlickrConnection.new
-y = x.get_photo_urls
-z = OutputCompositeImageFile.new(y)
-array=z.download_imgs
-a= z.slice_(array, 4)
-z.collage_of_imgs(a)
+FlickrSearchandOutput.run
