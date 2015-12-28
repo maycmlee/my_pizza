@@ -53,7 +53,10 @@ class OutputCSV
   end
 
   def convert_hashdata_to_CSV
-    CSV.open("pizzeria_info.csv", "wb") {|csv| self.data_set.to_a.each {|elem| csv << elem} }
+    CSV.open("pizzeria_info.csv", "wb", :write_headers=> true,
+    :headers => ["Venue Name","Phone","Address"] ) do |csv|
+     self.data_set.to_a.each {|elem| csv << elem}
+   end
   end
 end
 
