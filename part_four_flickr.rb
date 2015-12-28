@@ -45,11 +45,12 @@ class OutputCompositeImageFile
 
   def download_imgs
     photos_array = []
+    Dir.mkdir("images") unless File.exist?("images")
     @photo_urls.each_with_index do |url, index|
       open(url) {|f|
-        File.open("pizza_#{index}.jpg","wb") do |file|
+        File.open("images/pizza_#{index}.jpg","wb") do |file|
             file.puts f.read
-            photos_array << "pizza_#{index}.jpg"
+            photos_array << "images/pizza_#{index}.jpg"
           end
         }
     end
@@ -74,7 +75,7 @@ class OutputCompositeImageFile
     row = Magick::ImageList.new
     photos_array.each_with_index do |photo, index|
       resize_img(photo, index)
-      row.push(Image.read("pizza_#{index}.jpg")[0])
+      row.push(Image.read("images/pizza_#{index}.jpg")[0])
     end
     row
   end
@@ -82,7 +83,7 @@ class OutputCompositeImageFile
   def resize_img(photo, index)
     image = Magick::Image.read(photo)[0]
     resize = image.resize_to_fill(200, 100)
-    resize.write("pizza_#{index}.jpg")
+    resize.write("images/pizza_#{index}.jpg")
   end
 
 end
