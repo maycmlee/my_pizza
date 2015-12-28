@@ -21,7 +21,7 @@ class NPRQuery
     results = NPRQuery.new("pizza").query
     pizza_audio = GetAudioFiles.new(results)
     urls = pizza_audio.get_audio_urls
-    pizza_audio.download_audio(urls)
+    pizza_audio.create_playlist(urls)
   end
 
   def query
@@ -42,19 +42,33 @@ class GetAudioFiles
 
   def get_audio_urls
     self.json_data["list"]["story"].map do |data|
+      # binding.pry
+      # data["audio"][0]["format"]["mp3"][3]["$text"]
       data["audio"][0]["format"]["mp3"].first["$text"]
     end
   end
 
-  def download_audio(urls)
-    mp3s_list = []
-    Dir.mkdir("audio") unless File.exist?("audio")
-    urls.each_with_index do |url, index|
-      open("audio/audio_#{index}.mp3", 'wb') do |file|
-        file << open(url).read
-        mp3s_list << "audio_#{index}.mp3"
-      end
-    end
+  # def download_audio(urls)
+  #   mp3s_list = []
+  #   Dir.mkdir("audio") unless File.exist?("audio")
+  #   urls.each_with_index do |url, index|
+  #     open("audio/audio_#{index}.mp3", 'wb') do |file|
+  #       file << open(url).read
+  #       mp3s_list << "audio/audio_#{index}.mp3"
+  #     end
+  #   end
+  # end
+
+  def create_playlist(mp3_urls)
+    #Open the file and make it writable
+    file = File.open("pizza_news.m3u", 'w'){ |f|
+      f.write("\n")
+      mp3_urls.each do |url|
+        f.write("\n")
+        f.write("#{url}")
+        f.write("\n")
+      end    
+    }
   end
 
 end
