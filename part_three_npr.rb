@@ -8,6 +8,17 @@ require 'pp'
 # Output a file that can be loaded into VLC Media Player 
 # to play a series of news stories about pizza.
 
+class RunNPRQuery
+
+  def self.run
+    results = NPRQuery.new("pizza").query
+    pizza_audio = CreatePlaylist.new(results)
+    urls = pizza_audio.get_audio_urls
+    pizza_audio.new_playlist(urls)
+  end
+
+end
+
 class NPRQuery
   attr_accessor :search_term
 
@@ -17,15 +28,7 @@ class NPRQuery
     @search_term = search_term
   end
 
-  def self.get_pizza_audios
-    results = NPRQuery.new("pizza").query
-    pizza_audio = GetAudioFiles.new(results)
-    urls = pizza_audio.get_audio_urls
-    pizza_audio.create_playlist(urls)
-  end
-
   def query
-    #search for audio based on search_term and return JSON
     base_url = "http://api.npr.org/"
     query_url = "#{base_url}query?&requiredAssets=audio&searchTerm=#{self.search_term}&dateType=story&searchType=mainText&output=JSON&apiKey=#{API_KEY}"
     result = open(query_url).read
@@ -33,7 +36,7 @@ class NPRQuery
   end
 end
 
-class GetAudioFiles
+class CreatePlaylist
   attr_accessor :json_data
 
   def initialize(json_data)
@@ -42,8 +45,6 @@ class GetAudioFiles
 
   def get_audio_urls
     self.json_data["list"]["story"].map do |data|
-      # binding.pry
-      # data["audio"][0]["format"]["mp3"][3]["$text"]
       data["audio"][0]["format"]["mp3"].first["$text"]
     end
   end
@@ -59,8 +60,7 @@ class GetAudioFiles
   #   end
   # end
 
-  def create_playlist(mp3_urls)
-    #Open the file and make it writable
+  def new_playlist(mp3_urls)
     file = File.open("pizza_news.m3u", 'w'){ |f|
       f.write("\n")
       mp3_urls.each do |url|
@@ -70,7 +70,6 @@ class GetAudioFiles
       end    
     }
   end
-
 end
 
-NPRQuery.get_pizza_audios
+RunNPRQuery.run
