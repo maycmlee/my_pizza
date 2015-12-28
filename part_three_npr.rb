@@ -1,4 +1,5 @@
 require 'rubygems'
+require 'open-uri'
 require 'json'
 require 'pry' 
 require 'pp'
@@ -17,8 +18,11 @@ class NPRQuery
   end
 
   def query
+    #search for audio based on search_term
     base_url = "http://api.npr.org/"
-    query_url = "#{base_url}query?apiKey=#{API_KEY}&searchTerm=#{self.search_term}"
+    query_url = "#{base_url}query?id=1053&requiredAssets=audio&searchTerm=#{self.search_term}&dateType=story&output=JSON&apiKey=#{API_KEY}"
+    result = open(query_url).read
+    JSON.parse(result)
   end
 end
 
