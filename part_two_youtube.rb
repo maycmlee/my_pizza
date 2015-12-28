@@ -10,6 +10,13 @@ require 'google/api_client'
 # top-rated high-definition videos about pizza. Output an HTML file 
 # which embeds these videos and presents them as a grid.
 
+class YoutubeSearchandOutput
+  def self.run
+    videos = YouTubeConnection.new.get_videos("Pizza")
+    EmbedVideotoHTMLPage.new(videos).create_html_page
+  end
+end
+
 class YouTubeConnection
   attr_accessor :video_search_JSON
 
@@ -49,7 +56,6 @@ class YouTubeConnection
       "https://www.youtube.com/embed/#{video_id}"
     end
   end
-  
 end
 
 class EmbedVideotoHTMLPage
@@ -76,5 +82,4 @@ class EmbedVideotoHTMLPage
   end
 end
 
-x = YouTubeConnection.new.get_videos("Pizza")
-y = EmbedVideotoHTMLPage.new(x).create_html_page
+YoutubeSearchandOutput.run
