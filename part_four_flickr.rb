@@ -26,7 +26,7 @@ class FlickrConnection
 
   def get_pizza_photos
     #need to change per_page to 20 for final submission
-    @flickr.photos.search(text: 'pizza',tags: 'pizza', content_type: 1, per_page: 8)
+    @flickr.photos.search(text: 'pizza',tags: 'pizza', content_type: 1, per_page: 20)
   end
 
   def get_urls
@@ -47,9 +47,9 @@ class OutputCompositeImageFile
     photos_array = []
     @photo_urls.each_with_index do |url, index|
       open(url) {|f|
-        File.open("pizza#{index}.jpg","wb") do |file|
+        File.open("pizza_#{index}.jpg","wb") do |file|
             file.puts f.read
-            photos_array << "pizza#{index}.jpg"
+            photos_array << "pizza_#{index}.jpg"
           end
         }
     end
@@ -72,10 +72,17 @@ class OutputCompositeImageFile
 
   def create_row_of_images(photos_array)
     row = Magick::ImageList.new
-    photos_array.each do |photo|
-      row.push(Image.read(photo).first)
+    photos_array.each_with_index do |photo, index|
+      resize_img(photo, index)
+      row.push(Image.read("pizza_#{index}.jpg")[0])
     end
     row
+  end
+
+  def resize_img(photo, index)
+    image = Magick::Image.read(photo)[0]
+    resize = image.resize_to_fill(200, 100)
+    resize.write("pizza_#{index}.jpg")
   end
 
 end
