@@ -18,10 +18,10 @@ class NPRQuery
   end
 
   def self.get_pizza_audios
-    pizza = NPRQuery.new("pizza")
-    results = pizza.query
-    urls = pizza.get_audio_urls(results)
-    pizza.download_audio(urls)
+    results = NPRQuery.new("pizza").query
+    pizza_audio = GetAudioFiles.new(results)
+    urls = pizza_audio.get_audio_urls
+    pizza_audio.download_audio(urls)
   end
 
   def query
@@ -31,9 +31,17 @@ class NPRQuery
     result = open(query_url).read
     JSON.parse(result)
   end
+end
 
-  def get_audio_urls(json_data)
-    json_data["list"]["story"].map do |data|
+class GetAudioFiles
+  attr_accessor :json_data
+
+  def initialize(json_data)
+    @json_data = json_data
+  end
+
+  def get_audio_urls
+    self.json_data["list"]["story"].map do |data|
       data["audio"][0]["format"]["mp3"].first["$text"]
     end
   end
