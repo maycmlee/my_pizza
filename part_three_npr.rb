@@ -3,7 +3,6 @@ require 'open-uri'
 require 'json'
 require 'pry' 
 require 'pp'
-# require 'fileutils'
 
 # 3. Find an API for a source of news, in audio format. 
 # Output a file that can be loaded into VLC Media Player 
@@ -26,7 +25,7 @@ class NPRQuery
   end
 
   def query
-    #search for audio based on search_term
+    #search for audio based on search_term and return JSON
     base_url = "http://api.npr.org/"
     query_url = "#{base_url}query?&requiredAssets=audio&searchTerm=#{self.search_term}&dateType=story&searchType=mainText&output=JSON&apiKey=#{API_KEY}"
     result = open(query_url).read
@@ -41,7 +40,7 @@ class NPRQuery
 
   def download_audio(urls)
     mp3s_list = []
-    Dir.mkdir("audio")
+    Dir.mkdir("audio") unless File.exist?("audio")
     urls.each_with_index do |url, index|
       open("audio/audio_#{index}.mp3", 'wb') do |file|
         file << open(url).read
