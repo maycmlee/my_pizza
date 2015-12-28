@@ -26,7 +26,7 @@ class FlickrConnection
 
   def get_pizza_photos
     #need to change per_page to 20 for final submission
-    @flickr.photos.search(text: 'pizza',tags: 'pizza', content_type: 1, per_page: 6)
+    @flickr.photos.search(text: 'pizza',tags: 'pizza', content_type: 1, per_page: 8)
   end
 
   def get_urls
@@ -56,30 +56,26 @@ class OutputCompositeImageFile
     photos_array
   end
 
-  def slice_(photos_array)
-    photos_array.each_slice(3).to_a
+  def slice_(photos_array, num)
+    photos_array.each_slice(num).to_a
   end
 
-  def output_composite_img #(photos_array)
-
-   # this will be the final image
+  def collage_of_imgs(sliced_arrays)
     collage = ImageList.new
-   #this is an image containing first row of images
-    first_row = Magick::ImageList.new
-    #this is an image containing second row of images
-    second_row = Magick::ImageList.new
 
-    #adding images to the first row (Image.read returns an Array, this is why .first is needed)
-    first_row.push(Image.read("pizza0.jpg").first)
-    first_row.push(Image.read("pizza1.jpg").first)
-    first_row.push(Image.read("pizza2.jpg").first)
-    #adding first row to big image and specify that we want images in first row to be appended in a single image on the same row - argument false on append does that
-    collage.push (first_row.append(false))
-    collage.append(true).write("big_image.jpg")
+    sliced_arrays.each do |array|
+      row = create_row_of_images(array)
+      collage.push (row.append(false))
+    end
+    collage.append(true).write("pizza_collage.jpg")
   end
 
-  def create_row_of_images(array)
+  def create_row_of_images(photos_array)
     row = Magick::ImageList.new
+    photos_array.each do |photo|
+      row.push(Image.read(photo).first)
+    end
+    row
   end
 
 end
@@ -89,5 +85,5 @@ x = FlickrConnection.new
 y = x.get_photo_urls
 z = OutputCompositeImageFile.new(y)
 array=z.download_imgs
-pp z.slice_(array)
-z.output_composite_img
+a= z.slice_(array, 4)
+z.collage_of_imgs(a)
