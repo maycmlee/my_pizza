@@ -5,7 +5,21 @@ require 'pry'
 require 'pp'
 require 'csv'
 
+# Create a single-file program in Javascript, Ruby, or Objective-C that performs the exercise. Javascript and Ruby codeshould not be platform-specific. Objective-C code samples will be compiled and run on Mac OS X.
+# - Feel free to use any third-party libraries you'd like, but don't include them with your submission. You can include a standard package manager configuration (bundler, cocoapods, npm, bower, etc...).
+# - Any APIs selected should be either freely usable without authentication, or have an API key that's easy to sign up for. Please don't include any API keys in your submission.
+# - Zip the code sample file and any supporting materials and email to sam@mypizza.com. Please include the string “sample code submission” in the subject line. Please also include the time the exercise was begun.
+
 # 1. Find an open source data set with information about the food and beverage venues in the Times Square area. Write a script that retrieves that data and outputs a CSV file containing the name, phone number, and address of the pizza restaurants in the data set.
+
+class VenueSearchandOutput
+
+  def self.run
+    info = VenueLocationData.new("pizza").food_beverage_times_square
+    newCSV = OutputCSV.new(info)
+    newCSV.convert_hashdata_to_CSV
+  end
+end
 
 class VenueLocationData
   attr_accessor :venue_type, :url, :json_data, :pizza_places
@@ -60,17 +74,8 @@ class OutputCSV
   end
 end
 
-
-info = VenueLocationData.new("pizza").food_beverage_times_square
-newCSV = OutputCSV.new(info)
-newCSV.convert_hashdata_to_CSV
+VenueSearchandOutput.run
 
 
-# Create a single-file program in Javascript, Ruby, or Objective-C that performs the exercise. Javascript and Ruby codeshould not be platform-specific. Objective-C code samples will be compiled and run on Mac OS X.
-# - Feel free to use any third-party libraries you'd like, but don't include them with your submission. You can include a standard package manager configuration (bundler, cocoapods, npm, bower, etc...).
-# - Any APIs selected should be either freely usable without authentication, or have an API key that's easy to sign up for. Please don't include any API keys in your submission.
-# - Zip the code sample file and any supporting materials and email to sam@mypizza.com. Please include the string “sample code submission” in the subject line. Please also include the time the exercise was begun.
 
-
-# 3. Find an API for a source of news, in audio format. Output a file that can be loaded into VLC Media Player to play a series of news stories about pizza.
 
