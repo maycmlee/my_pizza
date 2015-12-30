@@ -10,6 +10,7 @@ require 'RMagick'
 include Magick
 
 class All
+  
   def self.run
     VenueSearchandOutput.run
     YoutubeSearchandOutput.run
@@ -18,67 +19,96 @@ class All
   end
 end
 
-# 1. Find an open source data set with information about the food and beverage venues in the Times Square area. Write a script that retrieves that data and outputs a CSV file containing the name, phone number, and address of the pizza restaurants in the data set.
+# 1. Find an open source data set with information about the food and beverage 
+#  venues in the Times Square area. Write a script that retrieves that data and outputs
+# a CSV file containing the name, phone number, and
+# address of the pizza restaurants in the data set.
 
 class VenueSearchandOutput
 
   def self.run
-    info = VenueLocationData.new("pizza").food_beverage_times_square
-    newCSV = OutputCSV.new(info)
-    newCSV.convert_hashdata_to_CSV
+    pizza_venues = TimeSquareFoodBeverageVenues.new.get_specific_venues("pizza")
+    venue_data_for_CSV = CSVOutput.new(pizza_venues)
+    venue_data_for_CSV.output_CSV
   end
 end
 
-class VenueLocationData
-  attr_accessor :venue_type, :url, :json_data, :pizza_places
+class TimeSquareFoodBeverageVenues
 
-  def initialize(venue_type)
-    @venue_type = venue_type
+  def get_specific_venues(venue_type)
+    all_venues = self.get_all_venues
+    all_venues.select do |venue|
+      venue.data.include?(venue_type.capitalize)
+    end
+  end
+  
+  def get_all_venues
+    all_venues = self.get_json
+    all_venues["data"].map do |venue|
+      Venue.new(venue)
+    end
   end
 
-  def food_beverage_times_square
+  def get_json
     url = "https://data.cityofnewyork.us/api/views/kh2m-kcyz/rows.json?accessType=DOWNLOAD"
-    json_result = get_json(url)
-    venue_info = get_venues(json_result)
-    get_name_phone_address(venue_info)
-  end
-
-  def get_json(url)
-    data = open(url).read
-    JSON.parse(data)
-  end
-
-  def get_venues(json_result)
-    venues = json_result["data"]
-    venues.select do |venue|
-     venue.include?(venue_type.capitalize)
-    end
-  end
-
-  def get_name_phone_address(venues)
-    venues.map do |venue|
-      address = clean_address(venue[7][40..55])
-      [venue[8], venue[11], address]
-    end
-  end
-
-  def clean_address(string)
-    string.gsub("\n", "").tr(%q{"'}, '').strip
+    venues = open(url).read
+    JSON.parse(venues)
   end
 end
 
-class OutputCSV
-  attr_reader :data_set
+class Venue
+  attr_accessor :data
 
-  def initialize(data_set)
-    @data_set = data_set
+  def initialize(data)
+    @data = data
   end
 
-  def convert_hashdata_to_CSV
+  def restaurant_name
+    self.data[8]
+  end
+
+  def address
+    self.data[7][40..55].gsub("\n", "").tr(%q{"'}, '').strip
+  end
+
+  def phone
+    self.data[11]
+  end
+end
+
+
+class CSVOutput
+  attr_reader :venues_data
+  
+  def initialize(venues_data)
+    @venues_data = venues_data
+  end
+
+  def output_CSV
+    venues_data = self.format_data_for_CSV
     CSV.open("pizzeria_info.csv", "wb", :write_headers=> true,
     :headers => ["Venue Name","Phone","Address"] ) do |csv|
-     self.data_set.to_a.each {|elem| csv << elem}
+     venues_data.each {|elem| csv << elem}
    end
+  end
+
+  def format_data_for_CSV
+    self.venues_data.map do |venue|
+      CSVAdapter.new(venue).convert_to_CSV_form
+    end
+  end
+
+end
+
+class CSVAdapter
+  attr_accessor :venue
+
+  def initialize(venue)
+    @venue = venue
+  end
+
+  def convert_to_CSV_form
+    [self.venue.restaurant_name, self.venue.phone, self.venue.address]
   end
 end
 
@@ -163,14 +193,12 @@ end
 # to play a series of news stories about pizza.
 
 class RunNPRQuery
-
   def self.run
-    results = NPRQuery.new("pizza").query
+    results = NPRQuery.new("pizza").query # choose better name than results
     pizza_audio = CreatePlaylist.new(results)
-    urls = pizza_audio.get_audio_urls
+    urls = pizza_audio.get_audio_urls # good variable name
     pizza_audio.new_playlist(urls)
   end
-
 end
 
 class NPRQuery
@@ -241,7 +269,6 @@ class FlickrConnection
   end
 
   def get_pizza_photos
-    #need to change per_page to 20 for final submission
     @flickr.photos.search(text: 'pizza',tags: 'pizza', content_type: 1, per_page: 20, license: 6)
   end
 
@@ -266,9 +293,10 @@ class CreateCollage
   end
 
   def download_imgs
+    # use map.with_index instead here.
     @photos_array = []
     Dir.mkdir("images") unless File.exist?("images")
-    @photo_urls.each_with_index do |url, index|
+    @photo_urls.map.with_index do |url, index|
       open(url) {|f|
         File.open("images/pizza_#{index}.jpg","wb") do |file|
             file.puts f.read
@@ -305,7 +333,7 @@ class CreateCollage
 
   def resize_img(photo, index)
     image = Magick::Image.read(photo)[0]
-    resize = image.resize_to_fill(200, 100)
+    resize = image.resize_to_fill(225, 125)
     resize.write("images/pizza_#{index}.jpg")
   end
 end
