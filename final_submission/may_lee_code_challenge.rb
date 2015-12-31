@@ -118,17 +118,18 @@ end
 
 class YoutubeSearchandOutput
   def self.run
-    videos = YouTubeConnection.new.get_videos("Pizza")
+    videos = YouTubeSearch.new("pizza").get_videos
     EmbedVideotoHTMLPage.new(videos).create_html_page
   end
 end
 
-class YouTubeConnection
-  attr_accessor :video_search_JSON
+class YouTubeSearch
+  attr_accessor :search_term, :client, :video_search_JSON
 
   DEVELOPER_KEY = File.read("youtube.yml")
 
-  def initialize
+  def initialize(search_term)
+    @search_term = search_term
     @client = Google::APIClient.new(
     :key => DEVELOPER_KEY,
     :authorization => nil,
@@ -137,38 +138,41 @@ class YouTubeConnection
     )
   end
 
-  def get_videos(search_term)
-    query_result = query(search_term)
-    video_ids = get_video_ids(query_result)
-    get_pizza_video_urls(video_ids)
+  def get_videos
+    videos = self.query
+    videos["items"].map do |video|
+      Video.new(video)
+    end
   end
 
-  def query(search_term)
+  def query
     youtube = @client.discovered_api('youtube', 'v3')
-
-    video_search = @client.execute :api_method => youtube.search.list, :parameters => {q: "#{search_term}", part: 'id', type: 'video', chart: "mostPopular"}
-
+    video_search = @client.execute :api_method => youtube.search.list, :parameters => {q: "#{self.search_term}", part: 'id', type: 'video', chart: "mostPopular"}
     JSON.parse(video_search.data.to_json)
   end
+end
 
-  def get_video_ids(query_result)
-    query_result.values[4].map do |video|
-      video["id"]["videoId"]
-    end
+class Video
+  attr_reader :id, :data
+
+  def initialize(data)
+    @data = data
   end
 
-  def get_pizza_video_urls(video_ids)
-    video_ids.map do |video_id|
-      "https://www.youtube.com/embed/#{video_id}"
-    end
+  def id
+    self.data["id"]["videoId"]
+  end
+
+  def url
+    "https://www.youtube.com/embed/#{self.id}"
   end
 end
 
 class EmbedVideotoHTMLPage
-  attr_accessor :urls_array
+  attr_reader :videos
 
-  def initialize(urls_array)
-    @urls_array = urls_array
+  def initialize(videos)
+    @videos = videos
   end
 
   def create_html_page
@@ -182,8 +186,8 @@ class EmbedVideotoHTMLPage
   end
 
   def embed_video_strings
-    self.urls_array.map do |url|
-      "<iframe title='YouTube video player' width='480' height='390' src=" + url + " type='video/mp4'></iframe>"
+    self.videos.map do |video|
+      "<iframe title='YouTube video player' width='480' height='390' src=" + video.url + " type='video/mp4'></iframe>"
     end
   end
 end
