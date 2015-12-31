@@ -198,10 +198,8 @@ end
 
 class RunNPRQuery
   def self.run
-    results = NPRQuery.new("pizza").query # choose better name than results
-    pizza_audio = CreatePlaylist.new(results)
-    urls = pizza_audio.get_audio_urls # good variable name
-    pizza_audio.new_playlist(urls)
+    pizza_news_audio_array = NPRQuery.new("pizza").get_audio
+    Playlist.new(pizza_news_audio_array).create_playlist
   end
 end
 
@@ -214,6 +212,13 @@ class NPRQuery
     @search_term = search_term
   end
 
+  def get_audio
+    audio_array = self.query
+    audio_array["list"]["story"].map do |audio|
+      Audio.new(audio)
+    end
+  end
+
   def query
     base_url = "http://api.npr.org/"
     query_url = "#{base_url}query?&requiredAssets=audio&searchTerm=#{self.search_term}&dateType=story&searchType=mainText&output=JSON&apiKey=#{API_KEY}"
@@ -222,25 +227,30 @@ class NPRQuery
   end
 end
 
-class CreatePlaylist
-  attr_accessor :json_data
-
-  def initialize(json_data)
-    @json_data = json_data
+class Audio
+  attr_accessor :data
+  def initialize(data)
+    @data = data
   end
 
-  def get_audio_urls
-    self.json_data["list"]["story"].map do |data|
-      data["audio"][0]["format"]["mp3"].first["$text"]
-    end
+  def url
+    self.data["audio"][0]["format"]["mp3"].first["$text"]
+  end
+end
+
+class Playlist
+  attr_accessor :audio_list
+
+  def initialize(audio_list)
+    @audio_list = audio_list
   end
 
-  def new_playlist(mp3_urls)
+  def create_playlist
     file = File.open("pizza_news.m3u", 'w'){ |f|
       f.write("\n")
-      mp3_urls.each do |url|
+      self.audio_list.each do |audio|
         f.write("\n")
-        f.write("#{url}")
+        f.write("#{audio.url}")
         f.write("\n")
       end    
     }
