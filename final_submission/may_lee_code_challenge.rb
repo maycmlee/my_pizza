@@ -153,7 +153,7 @@ class YouTubeSearch
 end
 
 class Video
-  attr_reader :id, :data
+  attr_reader :data
 
   def initialize(data)
     @data = data
