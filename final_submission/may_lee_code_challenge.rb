@@ -281,7 +281,7 @@ class FlickrSearch
   def get_photos
     flickr_photos = self.query
     flickr_photos.map.with_index do |photo, index|
-      PhotoDataFromFlickr.new(photo, index)
+      PhotoData.new(photo, index)
     end
   end
 
@@ -290,7 +290,7 @@ class FlickrSearch
   end
 end
 
-class PhotoDataFromFlickr
+class PhotoData
   attr_accessor :flickr_data, :id
 
   def initialize(flickr_data, id)
