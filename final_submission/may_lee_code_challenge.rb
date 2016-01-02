@@ -265,90 +265,135 @@ end
 class FlickrSearchandOutput
 
   def self.run
-    photos = FlickrConnection.new.get_photo_urls
-    CreateCollage.new(photos).new_collage
+    flickr_photos = FlickrSearch.new("pizza").get_photos
+    Collage.new(flickr_photos).create_collage
   end
 end
 
-class FlickrConnection
-  attr_accessor :photos, :urls
+class FlickrSearch
+  attr_accessor :search_term
 
-  def initialize  
+  def initialize(search_term)
+    @search_term = search_term 
     @flickr = Flickr.new('flickr.yml')
   end
 
-  def get_photo_urls
-    self.photos = get_pizza_photos
-    get_urls
-  end
-
-  def get_pizza_photos
-    @flickr.photos.search(text: 'pizza',tags: 'pizza', content_type: 1, per_page: 20, license: 6)
-  end
-
-  def get_urls
-    self.photos.map do |photo|
-      photo.url(:small)
+  def get_photos
+    flickr_photos = self.query
+    flickr_photos.map.with_index do |photo, index|
+      PhotoDataFromFlickr.new(photo, index)
     end
   end
 
+  def query
+    @flickr.photos.search(text: "#{self.search_term}",tags: "#{self.search_term}", content_type: 1, per_page: 20, license: 6)
+  end
 end
 
-class CreateCollage
-    attr_accessor :photo_urls, :sliced_arrays, :photos_array
+class PhotoDataFromFlickr
+  attr_accessor :flickr_data, :id
 
-  def initialize(photo_urls)
-    @photo_urls = photo_urls
+  def initialize(flickr_data, id)
+    @flickr_data = flickr_data
+    @id = id
   end
 
-  def new_collage
-    self.download_imgs
-    self.collage_of_imgs
+  def url
+    self.flickr_data.url(:small)
+  end
+end
+
+class PhotoImage
+  attr_accessor :photo_flickr
+
+  def initialize(photo_flickr)
+    @photo_flickr = photo_flickr
   end
 
-  def download_imgs
-    # use map.with_index instead here.
-    @photos_array = []
+  def download
     Dir.mkdir("images") unless File.exist?("images")
-    @photo_urls.map.with_index do |url, index|
-      open(url) {|f|
-        File.open("images/pizza_#{index}.jpg","wb") do |file|
-            file.puts f.read
-            self.photos_array << "images/pizza_#{index}.jpg"
-          end
-        }
-    end
-    photos_array
+    open(self.photo_flickr.url) {|f|
+      File.open(self.photo_path,"wb") do |file|
+          file.puts f.read
+        end
+      }
   end
 
-  def collage_of_imgs
-    collage = ImageList.new
+  def resize
+    image = Magick::Image.read(self.photo_path)[0]
+    resize = image.resize_to_fill(200, 100)
+    resize.write(self.photo_path)
+  end
 
-    sliced_photo_array.each do |array|
-      row = create_row_of_images(array)
+  def photo_path
+    "images/img_#{self.photo_flickr.id}.jpg"
+  end
+end
+
+class CollageAdapter
+  attr_accessor :flickr_photo_objs
+
+  def initialize(flickr_photo_objs)
+    @flickr_photo_objs = flickr_photo_objs
+  end
+
+  def convert_to_photos
+    self.flickr_photo_objs.map do |photo|
+      photo_image = PhotoImage.new(photo)
+      photo_image.download
+      photo_image.resize
+      photo_image
+    end
+  end
+end
+
+class CollageRow
+  attr_accessor :images_for_row
+
+  def initialize(images_for_row)
+    @images_for_row = images_for_row
+  end 
+
+  def create_row_for_collage
+    row = Magick::ImageList.new
+    self.images_for_row.each do |photo|
+      row.push(Image.read(photo.photo_path)[0])
+    end
+    row
+  end
+end
+
+class Collage
+  attr_reader :flickr_photos
+
+  def initialize(flickr_photos)
+    @flickr_photos = flickr_photos
+  end
+
+  def create_collage
+    collage = ImageList.new
+    collage_rows = self.get_rows_of_images
+    collage_rows.each do |row|
       collage.push (row.append(false))
     end
     collage.append(true).write("pizza_collage.jpg")
   end
 
-  def sliced_photo_array
-    #slices array of photos into subarrays of 4 photos
-    self.photos_array.each_slice(4).to_a
-  end
-
-  def create_row_of_images(photos_array)
-    row = Magick::ImageList.new
-    photos_array.each_with_index do |photo, index|
-      resize_img(photo, index)
-      row.push(Image.read("images/pizza_#{index}.jpg")[0])
+  def get_rows_of_images
+    images_array = self.get_images
+    collage_rows = slice_for_rows(images_array)
+    collage_rows.map do |row|
+      CollageRow.new(row).create_row_for_collage
     end
-    row
   end
 
-  def resize_img(photo, index)
-    image = Magick::Image.read(photo)[0]
-    resize = image.resize_to_fill(225, 125)
-    resize.write("images/pizza_#{index}.jpg")
+  def slice_for_rows(array)
+    #To get 4 photos for each collage row, slice array of photos into subarrays of 4 photos
+    array.each_slice(4).to_a
+  end
+
+  def get_images
+    CollageAdapter.new(self.flickr_photos).convert_to_photos
   end
 end
 
