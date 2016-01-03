@@ -18,25 +18,30 @@ end
 class VenueSearchandOutput
 
   def self.run
-    pizza_venues = TimeSquareFoodBeverageVenues.new.get_specific_venues("pizza")
-    venue_data_for_CSV = CSVOutput.new(pizza_venues)
-    venue_data_for_CSV.output_CSV
+    pizza_venues = CSVAdapter.new("pizza").output_specific_venues
+    CSVOutput.new(pizza_venues).output_CSV
   end
 end
 
-class TimeSquareFoodBeverageVenues
+class CSVAdapter
+  attr_accessor :venue_type
 
-  def get_specific_venues(venue_type)
-    all_venues = self.get_all_venues
-    all_venues.select do |venue|
-      venue.data.include?(venue_type.capitalize)
+  def initialize(venue_type)
+    @venue_type = venue_type
+  end
+
+  def output_specific_venues
+    venues = self.get_specific_venues
+    venues.map do |venue|
+      address = venue[7][40..55].gsub("\n", "").tr(%q{"'}, '').strip
+      Venue.new(venue[8], venue[11], address)
     end
   end
-  
-  def get_all_venues
+
+  def get_specific_venues
     all_venues = self.get_json
-    all_venues["data"].map do |venue|
-      Venue.new(venue)
+    all_venues["data"].select do |venue|
+      venue.include?(self.venue_type.capitalize)
     end
   end
 
@@ -48,58 +53,34 @@ class TimeSquareFoodBeverageVenues
 end
 
 class Venue
-  attr_accessor :data
+  attr_accessor :restaurant_name, :phone, :address
 
-  def initialize(data)
-    @data = data
-  end
-
-  def restaurant_name
-    self.data[8]
-  end
-
-  def address
-    self.data[7][40..55].gsub("\n", "").tr(%q{"'}, '').strip
-  end
-
-  def phone
-    self.data[11]
+  def initialize(restaurant_name, phone, address)
+    @restaurant_name = restaurant_name 
+    @phone = phone 
+    @address = address
   end
 end
 
-
 class CSVOutput
-  attr_reader :venues_data
+  attr_reader :venues
   
-  def initialize(venues_data)
-    @venues_data = venues_data
+  def initialize(venues)
+    @venues = venues
   end
 
   def output_CSV
-    venues_data = self.format_data_for_CSV
+    venues = self.format_data_for_CSV
     CSV.open("pizzeria_info.csv", "wb", :write_headers=> true,
     :headers => ["Venue Name","Phone","Address"] ) do |csv|
-     venues_data.each {|elem| csv << elem}
+     venues.each {|elem| csv << elem}
    end
   end
 
   def format_data_for_CSV
-    self.venues_data.map do |venue|
-      CSVAdapter.new(venue).convert_to_CSV_form
+    self.venues.map do |venue|
+      [venue.restaurant_name, venue.phone, venue.address]      
     end
-  end
-
-end
-
-class CSVAdapter
-  attr_accessor :venue
-
-  def initialize(venue)
-    @venue = venue
-  end
-
-  def convert_to_CSV_form
-    [self.venue.restaurant_name, self.venue.phone, self.venue.address]
   end
 end
 
