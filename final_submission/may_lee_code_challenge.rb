@@ -1,13 +1,4 @@
-require 'rubygems'
-require 'open-uri'
-require 'json'
-require 'pry' 
-require 'pp'
-require 'csv'
-require 'google/api_client'
-require 'flickr_fu'
-require 'RMagick'
-include Magick
+require_relative 'environment.rb'
 
 class All
   
