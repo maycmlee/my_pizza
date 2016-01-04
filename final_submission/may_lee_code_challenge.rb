@@ -113,7 +113,7 @@ class YouTubeSearch
   def get_videos
     videos = self.query
     videos["items"].map do |video|
-      Video.new(video)
+      Video.new(video["id"]["videoId"])
     end
   end
 
@@ -125,18 +125,14 @@ class YouTubeSearch
 end
 
 class Video
-  attr_reader :data
+  attr_reader :video_id
 
-  def initialize(data)
-    @data = data
-  end
-
-  def id
-    self.data["id"]["videoId"]
+  def initialize(video_id)
+    @video_id = video_id
   end
 
   def url
-    "https://www.youtube.com/embed/#{self.id}"
+    "https://www.youtube.com/embed/#{self.video_id}"
   end
 end
 
