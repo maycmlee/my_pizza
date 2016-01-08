@@ -249,7 +249,8 @@ class FlickrSearch
   def get_photos
     flickr_photos = self.query
     flickr_photos.map.with_index do |photo, index|
-      PhotoData.new(photo, index)
+      # PhotoData.new(photo, index)
+      Photo.new(photo, index)
     end
   end
 
@@ -258,7 +259,7 @@ class FlickrSearch
   end
 end
 
-class PhotoData
+class Photo
   attr_accessor :flickr_data, :id
 
   def initialize(flickr_data, id)
@@ -269,18 +270,10 @@ class PhotoData
   def url
     self.flickr_data.url(:small)
   end
-end
-
-class PhotoImage
-  attr_accessor :photo_flickr
-
-  def initialize(photo_flickr)
-    @photo_flickr = photo_flickr
-  end
-
+  
   def download
     Dir.mkdir("images") unless File.exist?("images")
-    open(self.photo_flickr.url) {|f|
+    open(self.url) {|f|
       File.open(self.photo_path,"wb") do |file|
           file.puts f.read
         end
@@ -294,7 +287,7 @@ class PhotoImage
   end
 
   def photo_path
-    "images/img_#{self.photo_flickr.id}.jpg"
+    "images/img_#{self.id}.jpg"
   end
 end
 
@@ -305,12 +298,11 @@ class CollageAdapter
     @flickr_photo_objs = flickr_photo_objs
   end
 
-  def convert_to_photos
+  def download_photos
     self.flickr_photo_objs.map do |photo|
-      photo_image = PhotoImage.new(photo)
-      photo_image.download
-      photo_image.resize
-      photo_image
+      photo.download
+      photo.resize
+      photo
     end
   end
 end
@@ -361,7 +353,7 @@ class Collage
   end
 
   def get_images
-    CollageAdapter.new(self.flickr_photos).convert_to_photos
+    CollageAdapter.new(self.flickr_photos).download_photos
   end
 end
 
